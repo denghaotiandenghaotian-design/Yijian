@@ -15,6 +15,16 @@
 
 ---
 
+## 🌐 在线访问（GitHub Pages）
+
+部署在 GitHub Pages，永久可用链接：
+
+**👉 https://denghaotiandenghaotian-design.github.io/Yijian/**
+
+仓库地址：https://github.com/denghaotiandenghaotian-design/Yijian
+
+---
+
 ## ✨ 核心模块
 
 | 模块 | 入口 | 功能 |
