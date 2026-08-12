@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>一级建造师 · 全能备考系统</title>
+  <link rel="stylesheet" href="assets/css/styles.css" />
+</head>
+<body>
+  <div id="app">
+    <!-- 侧边栏 -->
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-logo">一建</div>
+        <div class="brand-text">
+          <div class="brand-title">全能备考系统</div>
+          <div class="brand-sub">一级建造师 · 四科</div>
+        </div>
+      </div>
+      <nav class="nav" id="nav">
+        <button class="nav-item active" data-view="dashboard">🏠 学习概览</button>
+        <button class="nav-item" data-view="practice">📝 题库练习</button>
+        <button class="nav-item" data-view="review">📚 章节复习</button>
+        <button class="nav-item" data-view="wrongbook">📕 错题收藏</button>
+        <button class="nav-item" data-view="exam">🏛️ 模拟考试</button>
+        <button class="nav-item" data-view="progress">📊 进度跟踪</button>
+        <div class="nav-sep"></div>
+        <button class="nav-item" data-view="knowledge">📖 考点知识库</button>
+        <button class="nav-item" data-view="lectures">🎓 名师讲课</button>
+      </nav>
+      <div class="sidebar-foot">
+        <div class="streak" id="streakBox">🔥 连续学习 0 天</div>
+      </div>
+    </aside>
+
+    <!-- 主内容区 -->
+    <main class="main">
+      <header class="topbar">
+        <div class="topbar-left">
+          <button class="menu-btn" id="menuBtn" aria-label="菜单">☰</button>
+          <div class="topbar-title" id="viewTitle">学习概览</div>
+        </div>
+        <div class="topbar-actions">
+          <select id="subjectFilter" class="select">
+            <option value="all">全部科目</option>
+            <option value="economy">建设工程经济</option>
+            <option value="law">建设工程法规</option>
+            <option value="management">建设工程管理</option>
+            <option value="practice">专业实务(建筑)</option>
+          </select>
+          <button class="btn btn-ghost" id="resetBtn" title="清空本地学习数据">重置数据</button>
+        </div>
+      </header>
+      <section class="content" id="content"><!-- 动态渲染 --></section>
+    </main>
+  </div>
+
+  <!-- 数据层（纯浏览器全局变量，无需服务器） -->
+  <script src="assets/js/data_economy.js"></script>
+  <script src="assets/js/data_law.js"></script>
+  <script src="assets/js/data_management.js"></script>
+  <script src="assets/js/data_practice.js"></script>
+  <!-- 扩展题库（每科100+题，合并进主题库） -->
+  <script src="assets/js/data_economy_s.js"></script>
+  <script src="assets/js/data_economy_m.js"></script>
+  <script src="assets/js/data_law_s.js"></script>
+  <script src="assets/js/data_law_m.js"></script>
+  <script src="assets/js/data_management_s.js"></script>
+  <script src="assets/js/data_management_m.js"></script>
+  <script src="assets/js/data_practice_s.js"></script>
+  <script src="assets/js/data_practice_mc.js"></script>
+  <script src="assets/js/data_knowledge.js"></script>
+  <script src="assets/js/data_lectures.js"></script>
+  <!-- 应用层 -->
+  <script src="assets/js/app.js"></script>
+</body>
+</html>
