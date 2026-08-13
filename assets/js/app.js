@@ -177,6 +177,7 @@
     else if (view === "lectures") renderLectures(c);
     else if (view === "mindmap") renderMindmap(c);
     else if (view === "papers") renderPapers(c);
+    else if (view === "forecast") renderForecast(c);
     window.scrollTo(0, 0);
   }
   function updateStreakBox() {
@@ -187,7 +188,8 @@
     dashboard: "学习概览", practice: "题库练习", review: "章节复习",
     wrongbook: "错题收藏", exam: "模拟考试", progress: "进度跟踪",
     knowledge: "考点知识库", lectures: "名师讲课",
-    mindmap: "考点思维导图", papers: "试卷库"
+    mindmap: "考点思维导图", papers: "试卷库",
+    forecast: "2027考试预测"
   };
 
   /* ====================================================================
@@ -1439,7 +1441,7 @@
         var card = el("div", "paper-q");
         card.appendChild(el("div", "paper-q-n", "第 " + idx + " 题" + (q.chapter ? " · " + q.chapter : "")));
         card.appendChild(el("div", "paper-q-stem", escapeHtml(q.stem)));
-        if (q.type === "case") {
+        if (q.type === "case" || (q.subQuestions && q.subQuestions.length)) {
           var sub = el("div", "paper-sub");
           (q.subQuestions || []).forEach(function (sq) {
             sub.appendChild(el("div", "paper-sub-q", "（" + (sq.score || 0) + "分）" + escapeHtml(sq.q)));
@@ -1483,7 +1485,7 @@
         html += '<div class="print-paper-q">';
         html += '<div class="pq-h">第 ' + idx + ' 题 ' + (q.type === "single" ? "【单选】" : q.type === "multiple" ? "【多选】" : "【案例】") + '</div>';
         html += '<div class="pq-stem">' + escapeHtml(q.stem) + '</div>';
-        if (q.type === "case") {
+        if (q.type === "case" || (q.subQuestions && q.subQuestions.length)) {
           (q.subQuestions || []).forEach(function (sq) { html += '<div class="pq-sub">（' + (sq.score || 0) + '分）' + escapeHtml(sq.q) + '</div>'; });
           html += '<div class="print-paper-ans">';
           (q.subQuestions || []).forEach(function (sq) { html += '<div><b>参考答案：</b>' + escapeHtml(sq.a || "") + '</div>'; });
@@ -1510,6 +1512,167 @@
       [2021, 2022, 2023, 2024, 2025].forEach(function (y) {
         var g = "YJ_ZHENTI_" + y;
         if (typeof window[g] !== "undefined") window.YJ_ZHENTI[y] = window[g];
+      });
+      window.YJ_EXAMS.concat(Object.keys(window.YJ_ZHENTI).map(function (y) { return window.YJ_ZHENTI[y]; })).forEach(function (p) {
+        (p.parts || []).forEach(function (part) {
+          (part.questions || []).forEach(function (q) {
+            if (!q.type && part.type) q.type = part.type;
+            if (!q.stem && q.content) q.stem = q.content;
+          });
+        });
+      });
+    } catch (e) {}
+  }
+
+  /* ====================================================================
+   *  视图 11：2027 考试预测（YJ_FORECAST + 3 套预测卷）
+   * ==================================================================== */
+  var forecastTab = "kp";
+  function renderForecast(c) {
+    c.innerHTML = "";
+    $("#viewTitle").textContent = TITLES.forecast;
+    if (paperDetail) { renderPaperDetail(c, paperDetail); return; }
+    if (typeof YJ_FORECAST === "undefined") { c.appendChild(el("div", "empty", "预测数据未加载（data_forecast_2027.js）。")); return; }
+
+    var tabs = el("div", "seg");
+    [["kp", "📌 知识点预测"], ["hot", "🔥 热点考点预测"], ["q", "🎯 题目预测"], ["paper", "📝 预测模拟卷(3套)"]].forEach(function (t) {
+      var b = el("button", "seg-btn" + (forecastTab === t[0] ? " active" : ""), t[1]);
+      b.onclick = function () { forecastTab = t[0]; render(); };
+      tabs.appendChild(b);
+    });
+    c.appendChild(tabs);
+    c.appendChild(el("div", "muted", "2027 考试预测 · " + YJ_FORECAST.meta.basis));
+    c.appendChild(el("div", "muted", "⚠️ " + YJ_FORECAST.meta.warn));
+
+    var acts = el("div", "paper-acts");
+    var pdf = el("button", "btn btn-primary", "🖨️ 一键导出本板块 PDF");
+    pdf.onclick = function () { exportForecastPDF(); };
+    acts.appendChild(pdf);
+    c.appendChild(acts);
+
+    if (forecastTab === "kp") renderForecastKp(c);
+    else if (forecastTab === "hot") renderForecastHot(c);
+    else if (forecastTab === "q") renderForecastQ(c);
+    else if (forecastTab === "paper") renderForecastPaper(c);
+  }
+
+  /* ---- 知识点预测 ---- */
+  function renderForecastKp(c) {
+    var K = YJ_FORECAST.knowledge;
+    var grid = el("div", "grid grid-2");
+    Object.keys(K).forEach(function (k) {
+      var item = K[k];
+      var card = el("div", "kb-card");
+      card.appendChild(el("div", "kb-card-h", item.name));
+      var core = el("div");
+      core.appendChild(el("div", "section-title", "高频核心考点"));
+      item.core.forEach(function (x) { core.appendChild(el("div", "mm-cat", x)); });
+      card.appendChild(core);
+      var add = el("div");
+      add.appendChild(el("div", "section-title", "2027 新增 / 强化考点"));
+      item.added.forEach(function (x) { add.appendChild(el("div", "mm-fml", escapeHtml(x))); });
+      card.appendChild(add);
+      grid.appendChild(card);
+    });
+    c.appendChild(grid);
+  }
+
+  /* ---- 热点考点预测 ---- */
+  function renderForecastHot(c) {
+    var grid = el("div", "grid grid-2");
+    YJ_FORECAST.hot.forEach(function (h) {
+      var card = el("div", "hot-card kb-card");
+      card.appendChild(el("div", "hot-h", h.icon + " " + escapeHtml(h.title) + ' <span class="chip chip-gold">' + escapeHtml(h.tag) + "</span>"));
+      card.appendChild(el("div", "hot-d", escapeHtml(h.detail)));
+      var pts = el("div"); pts.style.marginTop = "10px";
+      h.points.forEach(function (p) { pts.appendChild(el("div", "mm-cat", p)); });
+      card.appendChild(pts);
+      grid.appendChild(card);
+    });
+    c.appendChild(grid);
+  }
+
+  /* ---- 题目预测 ---- */
+  function renderForecastQ(c) {
+    var grid = el("div", "grid grid-2");
+    YJ_FORECAST.questions.forEach(function (q) {
+      var card = el("div", "paper-q");
+      card.appendChild(el("div", "paper-q-n", q.icon + " " + escapeHtml(q.topic)));
+      card.appendChild(el("div", "paper-q-stem", "<b>预测题型与考查方式：</b>" + escapeHtml(q.predict)));
+      var ex = el("div", "mm-fml");
+      ex.innerHTML = "<b>示例：</b>" + escapeHtml(q.example);
+      card.appendChild(ex);
+      card.appendChild(el("div", "mm-cat", "<b>应对要点：</b>" + escapeHtml(q.tip)));
+      grid.appendChild(card);
+    });
+    c.appendChild(grid);
+  }
+
+  /* ---- 预测模拟卷（3 套）---- */
+  function renderForecastPaper(c) {
+    var list = (typeof YJ_PREDICT !== "undefined" ? YJ_PREDICT : []);
+    if (!list.length) { c.appendChild(el("div", "empty", "预测卷数据未加载（data_predict_*.js）。")); return; }
+    c.appendChild(el("div", "muted", "3 套独立编制的完整预测模拟卷（四科合一：经济/法规/管理/实务，含标准答案与详细解析），难度与真题相当，覆盖上述预测全部重点。"));
+    var grid = el("div", "grid grid-2");
+    list.forEach(function (p) { grid.appendChild(paperCard(p)); });
+    c.appendChild(grid);
+  }
+
+  /* ---- 预测板块整体 PDF ---- */
+  function exportForecastPDF() {
+    var F = YJ_FORECAST;
+    if (!F) { alert("数据缺失。"); return; }
+    var html = '<div class="print-head"><h1>一级建造师 · 2027 年考试预测</h1>';
+    html += '<div class="print-meta">' + escapeHtml(F.meta.basis) + ' ｜ 生成日期：' + todayStr() + '</div>';
+    html += '<div class="print-note">⚠️ 以下内容为备考方向预测，非官方押题；命题以当年新版教材与官方考试大纲为准。</div>';
+
+    // 一、知识点预测
+    html += '<h2 style="font-size:16px;color:#8a5a00;margin:14px 0 8px">一、知识点预测</h2>';
+    Object.keys(F.knowledge).forEach(function (k) {
+      var item = F.knowledge[k];
+      html += '<div class="print-mm-ch"><div class="print-mm-ch-h">' + item.name + ' · 高频核心考点</div>';
+      item.core.forEach(function (x) { html += '<div class="print-mm-cat">· ' + escapeHtml(x) + '</div>'; });
+      html += '<div class="print-mm-ch-h" style="margin-top:6px">' + item.name + ' · 2027 新增/强化</div>';
+      item.added.forEach(function (x) { html += '<div class="print-mm-cat">· ' + escapeHtml(x) + '</div>'; });
+      html += '</div>';
+    });
+
+    // 二、热点考点预测
+    html += '<h2 style="font-size:16px;color:#8a5a00;margin:14px 0 8px">二、热点考点预测</h2>';
+    F.hot.forEach(function (h) {
+      html += '<div class="print-mm-ch"><div class="print-mm-ch-h">' + escapeHtml(h.title) + '</div>';
+      html += '<div class="print-mm-cat">' + escapeHtml(h.detail) + '</div>';
+      h.points.forEach(function (p) { html += '<div class="print-mm-fml">→ ' + escapeHtml(p) + '</div>'; });
+      html += '</div>';
+    });
+
+    // 三、题目预测
+    html += '<h2 style="font-size:16px;color:#8a5a00;margin:14px 0 8px">三、可能的题目预测</h2>';
+    F.questions.forEach(function (q) {
+      html += '<div class="print-mm-ch"><div class="print-mm-ch-h">' + escapeHtml(q.topic) + '</div>';
+      html += '<div class="print-mm-cat"><b>预测：</b>' + escapeHtml(q.predict) + '</div>';
+      html += '<div class="print-mm-cat"><b>示例：</b>' + escapeHtml(q.example) + '</div>';
+      html += '<div class="print-mm-cat"><b>应对：</b>' + escapeHtml(q.tip) + '</div>';
+      html += '</div>';
+    });
+    ensurePrintArea().innerHTML = html;
+    setTimeout(function () { window.print(); }, 60);
+  }
+
+  /* ----------------------------- 预测卷数据合并 ----------------------------- */
+  function mergePredict() {
+    try {
+      if (typeof window.YJ_PREDICT === "undefined") window.YJ_PREDICT = [];
+      ["YJ_PREDICT_01", "YJ_PREDICT_02", "YJ_PREDICT_03"].forEach(function (g) {
+        if (typeof window[g] !== "undefined") window.YJ_PREDICT = window.YJ_PREDICT.concat(window[g]);
+      });
+      window.YJ_PREDICT.forEach(function (p) {
+        (p.parts || []).forEach(function (part) {
+          (part.questions || []).forEach(function (q) {
+            if (!q.type && part.type) q.type = part.type;
+            if (!q.stem && q.content) q.stem = q.content;
+          });
+        });
       });
     } catch (e) {}
   }
@@ -1565,6 +1728,7 @@
     if (typeof YJ_DATA === "undefined") { $("#content").innerHTML = '<div class="empty">数据未加载，请确认 assets/js/data_*.js 文件存在。</div>'; return; }
     mergeExtra();
     mergePapers();
+    mergePredict();
     normalizeData();
     bindNav();
     render();
