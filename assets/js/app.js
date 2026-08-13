@@ -1239,6 +1239,23 @@
     if (!pa) { pa = document.createElement("div"); pa.id = "printArea"; document.body.appendChild(pa); }
     return pa;
   }
+  /* 安全打印：检测环境并给出可操作提示（iframe 内嵌预览 / iOS 设备会拦截 window.print） */
+  function safePrint() {
+    var ua = (navigator && navigator.userAgent) || "";
+    var isIOS = /iPad|iPhone|iPod/.test(ua);
+    var inFrame = false;
+    try { inFrame = window.self !== window.top; } catch (e) { inFrame = true; }
+    if (isIOS) {
+      alert("检测到 iOS 设备：Safari 不支持一键打印。\n请在电脑浏览器（Chrome / Edge）打开本页面后导出 PDF，或在 Safari 中使用「分享 → 打印」另存为 PDF。");
+      return;
+    }
+    if (inFrame) {
+      alert("当前为内嵌预览窗口，打印功能可能被限制。\n请点击右上角「在新标签页中打开」，或直接访问正式链接后重试导出。");
+      return;
+    }
+    try { window.print(); }
+    catch (e) { alert("打印被浏览器拦截。请在浏览器菜单中选择「打印 → 另存为 PDF」。"); }
+  }
   function exportExamPDF() {
     if (!exam) { alert("没有可导出的考试。"); return; }
     var s = subj(exam.key);
@@ -1272,7 +1289,7 @@
     });
     html += '</ol></div>';
     ensurePrintArea().innerHTML = html;
-    setTimeout(function () { window.print(); }, 60);
+    setTimeout(function () { safePrint(); }, 60);
   }
 
   /* ====================================================================
@@ -1348,7 +1365,7 @@
       html += '</div>';
     });
     ensurePrintArea().innerHTML = html;
-    setTimeout(function () { window.print(); }, 60);
+    setTimeout(function () { safePrint(); }, 60);
   }
 
   /* ====================================================================
@@ -1498,7 +1515,7 @@
       });
     });
     ensurePrintArea().innerHTML = html;
-    setTimeout(function () { window.print(); }, 60);
+    setTimeout(function () { safePrint(); }, 60);
   }
 
   /* ----------------------------- 试卷库数据合并 ----------------------------- */
@@ -1656,7 +1673,7 @@
       html += '</div>';
     });
     ensurePrintArea().innerHTML = html;
-    setTimeout(function () { window.print(); }, 60);
+    setTimeout(function () { safePrint(); }, 60);
   }
 
   /* ----------------------------- 预测卷数据合并 ----------------------------- */

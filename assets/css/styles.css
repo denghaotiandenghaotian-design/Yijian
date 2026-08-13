@@ -279,7 +279,7 @@ table.tbl th{background:var(--panel-2);color:var(--gold-soft)}
 @media print{
   body *{visibility:hidden !important}
   #printArea,#printArea *{visibility:visible !important}
-  #printArea{position:absolute;left:0;top:0;width:100%;padding:24px 28px;background:#fff;color:#111}
+  #printArea{display:block !important;position:absolute;left:0;top:0;width:100%;padding:24px 28px;background:#fff;color:#111}
   .print-head h1{font-size:22px;margin-bottom:6px}
   .print-meta{font-size:13px;color:#444;margin-bottom:4px}
   .print-note{font-size:12px;color:#666;margin-bottom:14px;border-bottom:1px solid #ccc;padding-bottom:10px}
