@@ -307,3 +307,103 @@ table.tbl th{background:var(--panel-2);color:var(--gold-soft)}
   .grid-2,.grid-3,.grid-4{grid-template-columns:1fr}
   .mock-row{gap:12px}.field{flex:1;min-width:120px}
 }
+
+/* ==========================================================
+   思维导图（纵向 · 概念 + 公式）
+   ========================================================== */
+.mm-root{max-width:960px;margin:0 auto}
+.mm-subj-root{
+  text-align:center;padding:16px 20px;margin-bottom:8px;position:relative;
+  background:linear-gradient(135deg,rgba(226,162,82,.22),rgba(226,162,82,.06));
+  border:1px solid var(--gold);border-radius:14px
+}
+.mm-subj-root .t{font-size:19px;font-weight:800;color:var(--gold-soft)}
+.mm-subj-root .s{font-size:12.5px;color:var(--text-dim);margin-top:4px}
+.mm-branch{position:relative;margin:6px 0 0 0;padding-left:22px;border-left:2px solid var(--gold)}
+.mm-branch::before{content:"";position:absolute;left:-6px;top:16px;width:10px;height:10px;border-radius:50%;background:var(--gold)}
+.mm-ch-row{display:grid;grid-template-columns:repeat(auto-fill,minmax(430px,1fr));gap:16px;padding:18px 0 6px}
+@media(max-width:900px){.mm-ch-row{grid-template-columns:1fr}}
+.mm-ch{
+  background:linear-gradient(180deg,var(--panel),var(--bg-2));border:1px solid var(--line);
+  border-radius:12px;padding:14px 16px;position:relative
+}
+.mm-ch::before{content:"";position:absolute;left:-18px;top:22px;width:14px;height:2px;background:var(--gold)}
+.mm-ch-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+.mm-ch-head .code{color:var(--gold-soft);font-weight:700;font-size:12.5px}
+.mm-ch-head .name{font-weight:700;font-size:14.5px;line-height:1.4}
+.mm-cat{font-size:13px;line-height:1.6;color:var(--text-dim);padding:3px 0;border-bottom:1px dashed rgba(255,255,255,.05)}
+.mm-cat::before{content:"▸";color:var(--green);margin-right:7px}
+.mm-fml{
+  margin-top:9px;background:rgba(226,162,82,.07);border-left:3px solid var(--gold);
+  border-radius:0 8px 8px 0;padding:8px 12px
+}
+.mm-fml-n{font-size:12.5px;font-weight:700;color:var(--gold-soft)}
+.mm-fml-f{
+  display:inline-block;font-family:"Cambria Math",Consolas,Menlo,monospace;font-size:13.5px;
+  color:#fff;background:rgba(10,16,36,.55);border:1px solid var(--line);
+  padding:4px 10px;border-radius:7px;margin:6px 0 4px;letter-spacing:.3px
+}
+.mm-fml-d{font-size:12px;color:var(--text-mute);line-height:1.5}
+.mm-none{font-size:12.5px;color:var(--text-mute);font-style:italic}
+
+/* ==========================================================
+   试卷库（10套模拟 + 近5年真题）
+   ========================================================== */
+.paper-card{
+  background:linear-gradient(180deg,var(--panel),var(--bg-2));border:1px solid var(--line);
+  border-radius:12px;padding:14px 16px;cursor:pointer;transition:border-color .15s ease,transform .12s ease
+}
+.paper-card:hover{border-color:var(--gold);transform:translateY(-2px)}
+.paper-card-h{font-weight:700;font-size:14.5px;margin-bottom:6px;line-height:1.45}
+.paper-card-h .code{color:var(--gold-soft);font-size:12.5px;margin-right:6px}
+.paper-card-m{font-size:12.5px;color:var(--text-dim);margin-bottom:6px;line-height:1.6}
+.paper-card-go{font-size:12.5px;color:var(--gold);font-weight:600;text-align:right}
+.paper-detail-head{
+  display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;
+  background:linear-gradient(180deg,var(--panel),var(--bg-2));border:1px solid var(--line);
+  border-radius:14px;padding:18px 20px;margin:14px 0 16px
+}
+.paper-detail-head .t{font-size:18px;font-weight:800}
+.paper-detail-head .m{font-size:12.5px;color:var(--text-dim);margin-top:6px;line-height:1.7}
+.paper-part{font-size:15px;font-weight:800;color:var(--gold-soft);margin:20px 0 12px;padding-left:10px;border-left:3px solid var(--gold)}
+.paper-q{
+  background:linear-gradient(180deg,var(--panel),var(--bg-2));border:1px solid var(--line);
+  border-radius:12px;padding:14px 16px;margin-bottom:12px
+}
+.paper-q-n{font-size:12.5px;color:var(--gold-soft);font-weight:700;margin-bottom:6px}
+.paper-q-stem{font-size:14.5px;line-height:1.7;margin-bottom:10px;font-weight:500}
+.paper-opt{font-size:13.5px;line-height:1.65;color:var(--text-dim);padding:2px 0}
+.paper-opt.correct{color:#7fe3b6;font-weight:600}
+.paper-opt .tag{margin-left:6px;color:var(--green);font-size:11.5px}
+.paper-ans{
+  display:none;margin-top:10px;background:rgba(62,201,138,.08);border:1px solid rgba(62,201,138,.3);
+  border-radius:10px;padding:10px 14px;font-size:13.5px;line-height:1.7;color:#9fe9c6
+}
+.paper-ans .exp{color:var(--text-dim);margin-top:6px}
+.paper-ans .exp b{color:var(--gold-soft)}
+.paper-sub{margin-top:10px}
+.paper-sub-q{font-size:13.5px;line-height:1.7;color:var(--text);margin-bottom:6px}
+.paper-sub-a{font-size:13px;line-height:1.7;color:var(--green)}
+.paper-sub-a b{color:var(--gold-soft)}
+.paper-acts{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+
+/* ==========================================================
+   打印扩展：思维导图 PDF / 试卷 PDF
+   ========================================================== */
+@media print{
+  .print-mm-subj{font-size:20px;font-weight:800;color:#b8860b;margin-bottom:4px}
+  .print-mm-meta{font-size:12px;color:#555;margin-bottom:14px;border-bottom:1px solid #ccc;padding-bottom:8px}
+  .print-mm-ch{page-break-inside:avoid;border:1px solid #ddd;border-radius:8px;padding:10px 12px;margin-bottom:10px}
+  .print-mm-ch-h{font-weight:700;font-size:14px;margin-bottom:6px;color:#1a1a1a}
+  .print-mm-cat{font-size:12.5px;line-height:1.6;color:#333;padding-left:10px}
+  .print-mm-fml{font-size:12.5px;margin:6px 0 2px 10px;color:#0a3d62;background:#f4f7fb;border-left:3px solid #b8860b;padding:6px 10px}
+  .print-mm-fml b{color:#8a5a00}
+  .print-mm-fml .ff{font-family:Consolas,Menlo,monospace;color:#0a3d62;font-size:12.5px}
+  .print-mm-fml .fd{color:#666;font-size:11.5px}
+  .print-paper-head h1{font-size:21px;margin-bottom:6px}
+  .print-paper-meta{font-size:12.5px;color:#444;margin-bottom:12px;border-bottom:1px solid #ccc;padding-bottom:8px}
+  .print-paper-part{font-size:14px;font-weight:700;margin:14px 0 6px;color:#8a5a00}
+  .print-paper-q{page-break-inside:avoid;border-bottom:1px dashed #ddd;padding:8px 0}
+  .print-paper-ans{font-size:12.5px;line-height:1.6;color:#0a7d3b;margin-top:4px}
+  .print-paper-ans .e{color:#444}
+}

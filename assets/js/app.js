@@ -175,6 +175,8 @@
     else if (view === "progress") renderProgress(c);
     else if (view === "knowledge") renderKnowledge(c);
     else if (view === "lectures") renderLectures(c);
+    else if (view === "mindmap") renderMindmap(c);
+    else if (view === "papers") renderPapers(c);
     window.scrollTo(0, 0);
   }
   function updateStreakBox() {
@@ -184,7 +186,8 @@
   var TITLES = {
     dashboard: "学习概览", practice: "题库练习", review: "章节复习",
     wrongbook: "错题收藏", exam: "模拟考试", progress: "进度跟踪",
-    knowledge: "考点知识库", lectures: "名师讲课"
+    knowledge: "考点知识库", lectures: "名师讲课",
+    mindmap: "考点思维导图", papers: "试卷库"
   };
 
   /* ====================================================================
@@ -1271,9 +1274,250 @@
   }
 
   /* ====================================================================
+   *  视图 9：考点思维导图（YJ_MINDMAP · 纵向 · 概念+公式 · 一键PDF）
+   * ==================================================================== */
+  var mmSubject = "economy";
+  function renderMindmap(c) {
+    c.innerHTML = "";
+    $("#viewTitle").textContent = TITLES.mindmap;
+    if (typeof YJ_MINDMAP === "undefined") { c.appendChild(el("div", "empty", "思维导图数据未加载（data_mindmap.js）。")); return; }
+    if (!YJ_MINDMAP[mmSubject]) mmSubject = "economy";
+    var M = YJ_MINDMAP[mmSubject];
+
+    var tabs = el("div", "seg");
+    SUBJECT_KEYS.forEach(function (k) {
+      var b = el("button", "seg-btn" + (mmSubject === k ? " active" : ""), YJ_MINDMAP[k].name);
+      b.onclick = function () { mmSubject = k; render(); };
+      tabs.appendChild(b);
+    });
+    c.appendChild(tabs);
+    c.appendChild(el("div", "muted", "资料更新：" + YJ_MINDMAP.meta.updated + " · " + YJ_MINDMAP.meta.desc));
+
+    var root = el("div", "mm-root");
+    var subjRoot = el("div", "mm-subj-root");
+    subjRoot.innerHTML = '<div class="t">' + M.name + '</div><div class="s">共 ' + M.chapters.length + ' 章 · 概念 ' + mmCounts(M).c + ' 条 · 公式 ' + mmCounts(M).f + ' 个 · 纵向展开：科目 → 章节 → 概念 / 公式</div>';
+    root.appendChild(subjRoot);
+
+    var branch = el("div", "mm-branch");
+    var row = el("div", "mm-ch-row");
+    M.chapters.forEach(function (ch) { row.appendChild(mmChapterCard(ch)); });
+    branch.appendChild(row);
+    root.appendChild(branch);
+    c.appendChild(root);
+
+    var acts = el("div", "paper-acts"); acts.style.marginTop = "18px";
+    var pdf = el("button", "btn btn-primary", "🖨️ 一键导出本科目导图 PDF");
+    pdf.onclick = function () { exportMindmapPDF(mmSubject); };
+    acts.appendChild(pdf);
+    c.appendChild(acts);
+    c.appendChild(el("div", "muted", "提示：导图纵向展开「科目 → 章节 → 概念 / 公式」，概念为考点归纳、公式含表达式与使用说明；导出 PDF 为白底排版，便于打印背诵。"));
+  }
+  function mmCounts(M) {
+    var c = 0, f = 0;
+    M.chapters.forEach(function (ch) { c += (ch.concepts || []).length; f += (ch.formulas || []).length; });
+    return { c: c, f: f };
+  }
+  function mmChapterCard(ch) {
+    var card = el("div", "mm-ch");
+    card.appendChild(el("div", "mm-ch-head", '<span class="code">' + ch.code + '</span><span class="name">' + ch.name + '</span>'));
+    var cats = el("div");
+    (ch.concepts || []).forEach(function (x) { cats.appendChild(el("div", "mm-cat", escapeHtml(x))); });
+    if (!(ch.concepts || []).length) cats.appendChild(el("div", "mm-none", "本章以公式记忆为主"));
+    card.appendChild(cats);
+    (ch.formulas || []).forEach(function (f) {
+      var fm = el("div", "mm-fml");
+      fm.innerHTML = '<div class="mm-fml-n">' + escapeHtml(f.n) + '</div><span class="mm-fml-f">' + escapeHtml(f.f) + '</span><div class="mm-fml-d">' + escapeHtml(f.d || "") + '</div>';
+      card.appendChild(fm);
+    });
+    if (!(ch.formulas || []).length) card.appendChild(el("div", "mm-none", "本章无公式（以概念与数字要点记忆为主）"));
+    return card;
+  }
+  function exportMindmapPDF(subjectKey) {
+    var M = YJ_MINDMAP[subjectKey];
+    if (!M) { alert("数据缺失。"); return; }
+    var html = '<div class="print-head"><h1>一级建造师 · 考点思维导图</h1>';
+    html += '<div class="print-meta">科目：' + M.name + ' ｜ 章节 ' + M.chapters.length + ' ｜ 概念 ' + mmCounts(M).c + ' ｜ 公式 ' + mmCounts(M).f + ' ｜ 生成日期：' + todayStr() + '</div></div>';
+    M.chapters.forEach(function (ch) {
+      html += '<div class="print-mm-ch"><div class="print-mm-ch-h">' + ch.code + '　' + ch.name + '</div>';
+      (ch.concepts || []).forEach(function (x) { html += '<div class="print-mm-cat">· ' + escapeHtml(x) + '</div>'; });
+      (ch.formulas || []).forEach(function (f) {
+        html += '<div class="print-mm-fml"><b>' + escapeHtml(f.n) + '：</b><span class="ff">' + escapeHtml(f.f) + '</span> <span class="fd">' + escapeHtml(f.d || "") + '</span></div>';
+      });
+      html += '</div>';
+    });
+    ensurePrintArea().innerHTML = html;
+    setTimeout(function () { window.print(); }, 60);
+  }
+
+  /* ====================================================================
+   *  视图 10：试卷库（10 套模拟卷 + 近 5 年真题 · 标准答案 · 一键PDF）
+   * ==================================================================== */
+  var paperTab = "sim";
+  var paperDetail = null;
+  function renderPapers(c) {
+    c.innerHTML = "";
+    $("#viewTitle").textContent = TITLES.papers;
+    if (paperDetail) { renderPaperDetail(c, paperDetail); return; }
+    var tabs = el("div", "seg");
+    [["sim", "模拟试卷（10套）"], ["zt", "历年真题（近5年）"]].forEach(function (t) {
+      var b = el("button", "seg-btn" + (paperTab === t[0] ? " active" : ""), t[1]);
+      b.onclick = function () { paperTab = t[0]; render(); };
+      tabs.appendChild(b);
+    });
+    c.appendChild(tabs);
+    c.appendChild(el("div", "muted", paperTab === "sim"
+      ? "10 套全真模拟卷（经济2 / 法规2 / 管理3 / 实务3），附标准答案与解析，支持一键导出 PDF。"
+      : "2021-2025 年四科真题精编（按真题高频考点还原），附标准答案与解析，支持一键导出 PDF。"));
+
+    if (paperTab === "sim") {
+      var list = (typeof YJ_EXAMS !== "undefined" ? YJ_EXAMS : []);
+      var grid = el("div", "grid grid-2");
+      list.forEach(function (p) { grid.appendChild(paperCard(p)); });
+      c.appendChild(grid);
+      c.appendChild(el("div", "muted", "共 " + list.length + " 套模拟卷 · 点击任意一套进入浏览，可逐题展开标准答案与解析。"));
+    } else {
+      var years = Object.keys((typeof YJ_ZHENTI !== "undefined" ? YJ_ZHENTI : {})).sort();
+      years.forEach(function (y) {
+        var Y = YJ_ZHENTI[y];
+        c.appendChild(el("div", "section-title", "📅 " + y + " 年真题（四科）"));
+        var g2 = el("div", "grid grid-2");
+        SUBJECT_KEYS.forEach(function (k) { if (Y && Y[k]) g2.appendChild(paperCard(Y[k])); });
+        c.appendChild(g2);
+      });
+      if (!years.length) c.appendChild(el("div", "empty", "真题数据未加载（data_zhenti_*.js）。"));
+    }
+  }
+  function paperCard(p) {
+    var card = el("div", "paper-card");
+    card.appendChild(el("div", "paper-card-h", '<span class="code">' + (p.kind || "") + (p.year ? " · " + p.year : "") + '</span>' + p.name));
+    card.appendChild(el("div", "paper-card-m", p.note || ""));
+    card.appendChild(el("div", "paper-card-m", paperStats(p)));
+    card.appendChild(el("div", "paper-card-go", "浏览本卷 · 查看标准答案 ›"));
+    card.onclick = function () { paperDetail = p; render(); };
+    return card;
+  }
+  function paperStats(p) {
+    var single = 0, multi = 0, caseN = 0, score = 0;
+    (p.parts || []).forEach(function (part) {
+      var qs = part.questions || [];
+      if (part.type === "single") { single = qs.length; score += qs.length * (part.per || 1); }
+      else if (part.type === "multiple") { multi = qs.length; score += qs.length * (part.per || 2); }
+      else if (part.type === "case") {
+        caseN = qs.length;
+        qs.forEach(function (q) { score += (q.subQuestions || []).reduce(function (s, sq) { return s + (sq.score || 0); }, 0); });
+      }
+    });
+    var s = "";
+    if (single) s += "单选 " + single + " 题";
+    if (multi) s += (s ? " · " : "") + "多选 " + multi + " 题";
+    if (caseN) s += (s ? " · " : "") + "案例 " + caseN + " 题";
+    s += " · 满分 " + score + " 分" + (p.minutes ? " · " + p.minutes + " 分钟" : "");
+    return s;
+  }
+  function renderPaperDetail(c, p) {
+    $("#viewTitle").textContent = "试卷 · " + (p.name || "");
+    var back = el("button", "btn btn-ghost", "← 返回试卷库");
+    back.onclick = function () { paperDetail = null; render(); };
+    c.appendChild(back);
+    var head = el("div", "paper-detail-head");
+    var info = el("div");
+    info.appendChild(el("div", "t", p.name));
+    info.appendChild(el("div", "m", paperStats(p) + (p.note ? " ｜ " + p.note : "")));
+    head.appendChild(info);
+    var acts = el("div", "paper-acts");
+    var pdf = el("button", "btn btn-primary", "🖨️ 一键导出本卷 PDF（含标准答案）");
+    pdf.onclick = function () { exportPaperPDF(p); };
+    acts.appendChild(pdf);
+    head.appendChild(acts);
+    c.appendChild(head);
+
+    var idx = 0;
+    (p.parts || []).forEach(function (part) {
+      c.appendChild(el("div", "paper-part", part.title + "（共 " + (part.questions || []).length + " 题）"));
+      (part.questions || []).forEach(function (q) {
+        idx++;
+        var card = el("div", "paper-q");
+        card.appendChild(el("div", "paper-q-n", "第 " + idx + " 题" + (q.chapter ? " · " + q.chapter : "")));
+        card.appendChild(el("div", "paper-q-stem", escapeHtml(q.stem)));
+        if (q.type === "case") {
+          var sub = el("div", "paper-sub");
+          (q.subQuestions || []).forEach(function (sq) {
+            sub.appendChild(el("div", "paper-sub-q", "（" + (sq.score || 0) + "分）" + escapeHtml(sq.q)));
+            var a = el("div", "paper-sub-a", "<b>参考答案：</b>" + escapeHtml(sq.a || ""));
+            a.style.display = "none";
+            sub.appendChild(a);
+          });
+          card.appendChild(sub);
+          var rev2 = el("button", "btn btn-sm btn-ghost", "显示答案");
+          rev2.onclick = function () { $all(".paper-sub-a", card).forEach(function (x) { x.style.display = "block"; }); rev2.style.display = "none"; };
+          card.appendChild(rev2);
+        } else {
+          var ol = el("div");
+          q.options.forEach(function (opt, i) {
+            var letter = String.fromCharCode(65 + i);
+            var isAns = (q.answer || []).indexOf(letter) >= 0;
+            ol.appendChild(el("div", "paper-opt" + (isAns ? " correct" : ""), escapeHtml(opt) + (isAns ? ' <span class="tag">✓ 正确</span>' : "")));
+          });
+          card.appendChild(ol);
+          var ans = el("div", "paper-ans");
+          ans.innerHTML = "<b>标准答案：</b>" + escapeHtml((q.answer || []).join("、")) + '<div class="exp"><b>解析：</b>' + escapeHtml(expl(q)) + "</div>";
+          card.appendChild(ans);
+          var rev = el("button", "btn btn-sm btn-ghost", "显示答案");
+          rev.onclick = function () { ans.style.display = "block"; rev.style.display = "none"; };
+          card.appendChild(rev);
+        }
+        c.appendChild(card);
+      });
+    });
+    c.appendChild(el("div", "muted", "· 本卷为标准答案版：正确选项已标绿，答案与解析可逐题展开；导出 PDF 时题目与答案、解析一并排版。"));
+  }
+  function exportPaperPDF(p) {
+    if (!p) { alert("没有可导出的试卷。"); return; }
+    var html = '<div class="print-paper-head"><h1>' + escapeHtml(p.name) + '</h1>';
+    html += '<div class="print-paper-meta">' + escapeHtml(paperStats(p)) + ' ｜ 生成日期：' + todayStr() + (p.note ? ' ｜ ' + escapeHtml(p.note) : "") + '</div></div>';
+    var idx = 0;
+    (p.parts || []).forEach(function (part) {
+      html += '<div class="print-paper-part">' + escapeHtml(part.title) + '</div>';
+      (part.questions || []).forEach(function (q) {
+        idx++;
+        html += '<div class="print-paper-q">';
+        html += '<div class="pq-h">第 ' + idx + ' 题 ' + (q.type === "single" ? "【单选】" : q.type === "multiple" ? "【多选】" : "【案例】") + '</div>';
+        html += '<div class="pq-stem">' + escapeHtml(q.stem) + '</div>';
+        if (q.type === "case") {
+          (q.subQuestions || []).forEach(function (sq) { html += '<div class="pq-sub">（' + (sq.score || 0) + '分）' + escapeHtml(sq.q) + '</div>'; });
+          html += '<div class="print-paper-ans">';
+          (q.subQuestions || []).forEach(function (sq) { html += '<div><b>参考答案：</b>' + escapeHtml(sq.a || "") + '</div>'; });
+          html += "</div>";
+        } else {
+          (q.options || []).forEach(function (o) { html += '<div class="pq-opt">' + escapeHtml(o) + '</div>'; });
+          html += '<div class="print-paper-ans"><b>标准答案：</b>' + escapeHtml((q.answer || []).join("、")) + '<div class="e">解析：' + escapeHtml(expl(q)) + "</div></div>";
+        }
+        html += "</div>";
+      });
+    });
+    ensurePrintArea().innerHTML = html;
+    setTimeout(function () { window.print(); }, 60);
+  }
+
+  /* ----------------------------- 试卷库数据合并 ----------------------------- */
+  function mergePapers() {
+    try {
+      if (typeof window.YJ_EXAMS === "undefined") window.YJ_EXAMS = [];
+      ["YJ_EXAMS_ECONOMY", "YJ_EXAMS_LAW", "YJ_EXAMS_MANAGEMENT", "YJ_EXAMS_PRACTICE"].forEach(function (g) {
+        if (typeof window[g] !== "undefined") window.YJ_EXAMS = window.YJ_EXAMS.concat(window[g]);
+      });
+      if (typeof window.YJ_ZHENTI === "undefined") window.YJ_ZHENTI = {};
+      [2021, 2022, 2023, 2024, 2025].forEach(function (y) {
+        var g = "YJ_ZHENTI_" + y;
+        if (typeof window[g] !== "undefined") window.YJ_ZHENTI[y] = window[g];
+      });
+    } catch (e) {}
+  }
+
+  /* ====================================================================
    *  导航 & 全局事件
    * ==================================================================== */
-  function goto(v) { view = v; session = null; exam = null; kbDetail = null; render(); }
+  function goto(v) { view = v; session = null; exam = null; kbDetail = null; paperDetail = null; render(); }
   function bindNav() {
     $all(".nav-item").forEach(function (b) {
       b.onclick = function () {
@@ -1320,6 +1564,7 @@
   function boot() {
     if (typeof YJ_DATA === "undefined") { $("#content").innerHTML = '<div class="empty">数据未加载，请确认 assets/js/data_*.js 文件存在。</div>'; return; }
     mergeExtra();
+    mergePapers();
     normalizeData();
     bindNav();
     render();
